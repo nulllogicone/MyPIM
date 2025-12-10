@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Data.Tables;
 using MyPIM.Data;
 
@@ -43,6 +44,18 @@ public class PimTableService
     public async Task DeleteConfigurationAsync(string roleId)
     {
         await _configTable.DeleteEntityAsync("CONFIG", roleId);
+    }
+
+    public async Task<PimRoleConfiguration?> GetConfigurationAsync(string roleId)
+    {
+        try
+        {
+            return await _configTable.GetEntityAsync<PimRoleConfiguration>("CONFIG", roleId);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
     }
 
     // --- Requests ---

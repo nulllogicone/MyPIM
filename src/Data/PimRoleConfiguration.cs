@@ -12,6 +12,7 @@ public class PimRoleConfiguration : ITableEntity
 
     public string RoleName { get; set; } = string.Empty;
     public int DefaultDurationMinutes { get; set; } = 60;
+    public string TargetScope { get; set; } = string.Empty;
     public string? ApproverGroupId { get; set; }
     public bool IsEnabled { get; set; } = true;
 }

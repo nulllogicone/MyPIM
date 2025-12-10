@@ -16,7 +16,7 @@ builder.Services.AddServerSideBlazor();
 
 // MyPIM Services
 builder.Services.AddSingleton<PimTableService>();
-builder.Services.AddSingleton<IGraphService, MockGraphService>();
+builder.Services.AddSingleton<IGraphService, AzureRbacGraphService>();
 builder.Services.AddHostedService<RevocationWorker>();
 
 // Azure AD Auth
@@ -53,5 +53,26 @@ app.UseRouting();
 app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+// Seed Configuration
+using (var scope = app.Services.CreateScope())
+{
+    var pimService = scope.ServiceProvider.GetRequiredService<PimTableService>();
+    var existingConfigs = await pimService.GetConfigurationsAsync();
+    
+    // Seed Reader Role if not present
+    var readerRoleId = "acdd72a7-3385-48ef-bd42-f606fba81ae7"; // Built-in Reader
+    if (!existingConfigs.Any(c => c.RowKey == readerRoleId))
+    {
+        await pimService.SaveConfigurationAsync(new PimRoleConfiguration
+        {
+            RowKey = readerRoleId,
+            RoleName = "Reader",
+            DefaultDurationMinutes = 10,
+            TargetScope = "/subscriptions/87f246bc-1398-416b-8263-c9b08d374e17/resourceGroups/rg-mypim-dev",
+            IsEnabled = true
+        });
+    }
+}
 
 app.Run();

@@ -57,3 +57,13 @@ module webapp 'webapp.bicep' = {
 
 output webAppUrl string = webapp.outputs.webAppUrl
 output webAppName string = webapp.outputs.webAppName
+
+module roleAssignment 'roleAssignment.bicep' = {
+  scope: rg
+  name: 'roleAssignmentResult'
+  params: {
+    principalId: webapp.outputs.principalId
+    roleDefinitionId: '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9' // User Access Administrator
+    principalType: 'ServicePrincipal'
+  }
+}
