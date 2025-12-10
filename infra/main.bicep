@@ -18,6 +18,9 @@ param logAnalyticsWorkspaceName string = 'log-mypim-${uniqueString(subscription(
 @description('The name of the application insights component')
 param applicationInsightsName string = 'appi-mypim-${uniqueString(subscription().id, resourceGroupName)}'
 
+@description('The URL of the Event Grid Viewer (optional)')
+param eventGridViewerUrl string = ''
+
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
   location: location
@@ -75,6 +78,7 @@ module eventgrid 'eventgrid.bicep' = {
   params: {
     location: location
     topicName: 'eg-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+    viewerUrl: eventGridViewerUrl
   }
 }
 

@@ -1,0 +1,7 @@
+
+I have an EventGridView deployed manually
+
+https://mypimeventgridviewer.azurewebsites.net/
+
+this endpoint could be configured in parameters file 
+and a new subscription created if not empty for testing
