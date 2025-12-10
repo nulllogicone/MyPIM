@@ -15,13 +15,29 @@ public class AzureRbacGraphService : IGraphService
     private readonly ArmClient _armClient;
     private readonly Microsoft.Graph.GraphServiceClient _graphClient;
 
-    public AzureRbacGraphService(ILogger<AzureRbacGraphService> logger, PimTableService pimTableService)
+    public AzureRbacGraphService(ILogger<AzureRbacGraphService> logger, PimTableService pimTableService, IConfiguration configuration)
     {
         _logger = logger;
         _pimTableService = pimTableService;
 
-        // Use DefaultAzureCredential
-        var credential = new DefaultAzureCredential();
+        var options = new DefaultAzureCredentialOptions();
+        
+        // DefaultAzureCredential does NOT read UserSecrets/appsettings automatically.
+        // We must manually pass the TenantId from configuration.
+        var tenantId = configuration["AzureAd:TenantId"];
+        if (!string.IsNullOrEmpty(tenantId) && !string.Equals(tenantId, "common", StringComparison.OrdinalIgnoreCase))
+        {
+            options.TenantId = tenantId;
+            options.VisualStudioTenantId = tenantId;
+            options.SharedTokenCacheTenantId = tenantId;
+            _logger.LogInformation($"[Auth] Configured DefaultAzureCredential with TenantId: {tenantId}");
+        }
+
+        var credential = new DefaultAzureCredential(options);
+        
+        // Validating Identity matches Scope
+        // We can't easily peek "who" without getting a token.
+        // The ArmClient will handle this, but let's log the credential type if possible or just rely on the logger below.
         
         _armClient = new ArmClient(credential);
         _graphClient = new Microsoft.Graph.GraphServiceClient(credential);
@@ -43,8 +59,11 @@ public class AzureRbacGraphService : IGraphService
             throw new ArgumentException($"User ID '{userId}' is not a valid GUID (Object ID). Cannot assign Azure Role.");
         }
 
-        _logger.LogInformation($"Assigning Role {config.RoleName} ({roleId}) to User {userId} on scope {config.TargetScope}");
-        
+        _logger.LogInformation($"[Auth] Attempting role assignment...");
+        _logger.LogInformation($"[Auth] Target Scope: {config.TargetScope}");
+        _logger.LogInformation($"[Auth] Role ID: {roleId}");
+        _logger.LogInformation($"[Auth] User Object ID: {userId}");
+
         var scopeId = new ResourceIdentifier(config.TargetScope);
         var roleAssignments = _armClient.GetRoleAssignments(scopeId);
         
