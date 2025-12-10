@@ -17,6 +17,7 @@ builder.Services.AddServerSideBlazor();
 // MyPIM Services
 builder.Services.AddSingleton<PimTableService>();
 builder.Services.AddSingleton<IGraphService, AzureRbacGraphService>();
+builder.Services.AddSingleton<IEventService, EventGridService>();
 builder.Services.AddHostedService<RevocationWorker>();
 
 // Azure AD Auth

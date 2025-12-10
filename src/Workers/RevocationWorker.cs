@@ -25,6 +25,7 @@ public class RevocationWorker : BackgroundService
                 {
                     var tableService = scope.ServiceProvider.GetRequiredService<PimTableService>();
                     var graphService = scope.ServiceProvider.GetRequiredService<IGraphService>();
+                    var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
 
                     // 1. Get all Active requests
                     var activeRequests = await tableService.GetRequestsByStatusAsync(RequestStatus.Active);
@@ -49,6 +50,7 @@ public class RevocationWorker : BackgroundService
                             // 4. Update Status in Table (Move active -> Expired)
                             req.RevokedAt = DateTimeOffset.UtcNow;
                             await tableService.UpdateRequestStatusAsync(req, RequestStatus.Expired);
+                            await eventService.PublishRequestRemovedAsync(req);
 
                             _logger.LogInformation($"Revoked access for Request {req.RowKey}");
                         }

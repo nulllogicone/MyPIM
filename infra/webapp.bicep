@@ -12,6 +12,9 @@ param storageConnectionString string
 @secure()
 param applicationInsightsConnectionString string
 
+@description('The endpoint of the Event Grid Topic')
+param eventGridEndpoint string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
   location: location
@@ -54,6 +57,10 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'XDT_MicrosoftApplicationInsights_Mode'
           value: 'recommended'
+        }
+        {
+          name: 'EventGrid__Endpoint'
+          value: eventGridEndpoint
         }
       ]
     }

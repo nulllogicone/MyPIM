@@ -52,6 +52,7 @@ module webapp 'webapp.bicep' = {
     webAppName: webAppName
     storageConnectionString: storage.outputs.connectionString
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
+    eventGridEndpoint: eventgrid.outputs.topicEndpoint
   }
 }
 
@@ -64,6 +65,25 @@ module roleAssignment 'roleAssignment.bicep' = {
   params: {
     principalId: webapp.outputs.principalId
     roleDefinitionId: '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9' // User Access Administrator
+    principalType: 'ServicePrincipal'
+  }
+}
+
+module eventgrid 'eventgrid.bicep' = {
+  scope: rg
+  name: 'eventgridDeploy'
+  params: {
+    location: location
+    topicName: 'eg-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+  }
+}
+
+module eventGridRoleAssignment 'roleAssignment.bicep' = {
+  scope: rg
+  name: 'eventGridRoleAssignment'
+  params: {
+    principalId: webapp.outputs.principalId
+    roleDefinitionId: 'd5a91429-5739-47e2-a06b-3470a27159e7' // EventGrid Data Sender
     principalType: 'ServicePrincipal'
   }
 }

@@ -8,9 +8,11 @@ public class PimTableService
 {
     private readonly TableClient _configTable;
     private readonly TableClient _requestsTable;
+    private readonly IEventService _eventService;
 
-    public PimTableService(IConfiguration configuration)
+    public PimTableService(IConfiguration configuration, IEventService eventService)
     {
+        _eventService = eventService;
         var connectionString = configuration.GetConnectionString("AzureTableStorage")
             ?? throw new InvalidOperationException("Connection string 'AzureTableStorage' not found.");
 
@@ -87,6 +89,13 @@ public class PimTableService
     {
         request.PartitionKey = RequestStatus.Pending;
         await _requestsTable.AddEntityAsync(request);
+        await _eventService.PublishRequestCreatedAsync(request);
+    }
+
+    public async Task DeleteRequestAsync(AccessRequest request)
+    {
+        await _requestsTable.DeleteEntityAsync(request.PartitionKey, request.RowKey, request.ETag);
+        await _eventService.PublishRequestRemovedAsync(request);
     }
 
     public async Task UpdateRequestStatusAsync(AccessRequest request, string newStatus)
