@@ -1,0 +1,41 @@
+name: Deploy Infra
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP_NAME: 'rg-mypim-dev'
+  AZURE_LOCATION: 'westeurope'
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    environment: Development
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          scope: subscription
+          region: ${{ env.AZURE_LOCATION }}
+          template: infra/main.bicep
+          parameters: resourceGroupName=${{ env.AZURE_RESOURCE_GROUP_NAME }} location=${{ env.AZURE_LOCATION }}
