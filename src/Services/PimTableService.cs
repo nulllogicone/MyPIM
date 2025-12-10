@@ -92,7 +92,11 @@ public class PimTableService
 
         if (oldPk != newStatus)
         {
-            await _requestsTable.SubmitTransactionAsync(batch);
+            // Cross-partition update: Batch not supported if partitions differ
+            // 1. Add new
+            await _requestsTable.AddEntityAsync(request);
+            // 2. Delete old
+            await _requestsTable.DeleteEntityAsync(oldPk, request.RowKey, request.ETag);
         }
         else
         {
