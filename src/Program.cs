@@ -4,6 +4,9 @@ using MyPIM.Data;
 using MyPIM.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,11 +19,19 @@ builder.Services.AddSingleton<PimTableService>();
 builder.Services.AddSingleton<IGraphService, MockGraphService>();
 builder.Services.AddHostedService<RevocationWorker>();
 
-// Fake Auth for Mock
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie("Cookies");
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<AuthenticationStateProvider, MockAuthStateProvider>();
+// Azure AD Auth
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+builder.Services.AddControllersWithViews()
+    .AddMicrosoftIdentityUI();
+
+builder.Services.AddAuthorization(options =>
+{
+    // By default, all incoming requests will be authorized according to the default policy
+    options.FallbackPolicy = options.DefaultPolicy;
+});
+
+// builder.Services.AddScoped<AuthenticationStateProvider, MockAuthStateProvider>(); // Removed Mock
 
 
 var app = builder.Build();
@@ -39,6 +50,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
