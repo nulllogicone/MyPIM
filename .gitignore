@@ -1,0 +1,10 @@
+# Azurite
+__azurite*
+__blobstorage__
+__queuestorage__
+__tablestorage__
+
+# .NET
+bin/
+obj/
+.vscode/

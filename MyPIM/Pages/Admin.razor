@@ -1,0 +1,124 @@
+@page "/admin"
+@using MyPIM.Data
+@using MyPIM.Services
+@inject PimTableService TableService
+@inject IGraphService GraphService
+
+<h3>Admin Dashboard</h3>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == "approvals" ? "active" : "")" @onclick='() => activeTab = "approvals"' style="cursor:pointer">Approvals</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == "config" ? "active" : "")" @onclick='() => activeTab = "config"' style="cursor:pointer">Configuration</a>
+    </li>
+</ul>
+
+@if (activeTab == "approvals")
+{
+        <h4>Pending Requests</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Reason</th>
+                    <th>Requested</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var req in pendingRequests)
+            {
+                        <tr>
+                            <td>@req.UserDisplayName</td>
+                            <td>@req.RoleName</td>
+                            <td>@req.Reason</td>
+                            <td>@req.RequestedAt.ToString("g")</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" @onclick="() => Approve(req)">Approve</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => Deny(req)">Deny</button>
+                            </td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
+else
+{
+        <h4>Managed Roles</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Role Name</th>
+                    <th>Duration (Min)</th>
+                    <th>Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var config in configs)
+            {
+                        <tr>
+                            <td>@config.RoleName</td>
+                            <td>@config.DefaultDurationMinutes</td>
+                            <td>@config.IsEnabled</td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+        <div class="alert alert-info">
+            Note: Configuration management is read-only in this mock demo.
+        </div>
+}
+
+@code {
+    private string activeTab = "approvals";
+    private List<AccessRequest> pendingRequests = new();
+    private List<PimRoleConfiguration> configs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        pendingRequests = await TableService.GetRequestsByStatusAsync(RequestStatus.Pending);
+        configs = await TableService.GetConfigurationsAsync();
+
+        // Mock Configs if empty (first run)
+        if (!configs.Any())
+        {
+            var roles = await GraphService.GetAvailableDirectoryRolesAsync();
+            foreach (var r in roles)
+            {
+                await TableService.SaveConfigurationAsync(r);
+            }
+            configs = await TableService.GetConfigurationsAsync();
+        }
+    }
+
+    private async Task Approve(AccessRequest req)
+    {
+        // 1. Assign in Graph
+        await GraphService.AssignRoleAsync(req.UserId, req.RoleId);
+
+        // 2. Update Status and Expiry
+        // Get duration from config
+        var config = configs.FirstOrDefault(c => c.RowKey == req.RoleId);
+        var duration = config?.DefaultDurationMinutes ?? 60;
+
+        req.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(duration);
+        req.ApprovedAt = DateTimeOffset.UtcNow; // Assume current user approved
+
+        await TableService.UpdateRequestStatusAsync(req, RequestStatus.Active);
+        await LoadData();
+    }
+
+    private async Task Deny(AccessRequest req)
+    {
+        await TableService.UpdateRequestStatusAsync(req, RequestStatus.Rejected);
+        await LoadData();
+    }
+}

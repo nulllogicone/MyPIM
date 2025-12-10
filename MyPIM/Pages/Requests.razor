@@ -1,0 +1,118 @@
+@page "/requests"
+@using MyPIM.Data
+@using MyPIM.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject PimTableService TableService
+@inject IGraphService GraphService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<h3>My Access Requests</h3>
+
+<div class="card mb-4">
+    <div class="card-header">Request New Access</div>
+    <div class="card-body">
+        <EditForm Model="@newRequest" OnValidSubmit="HandleSubmit">
+            <div class="mb-3">
+                <label class="form-label">Role</label>
+                <InputSelect class="form-select" @bind-Value="newRequest.RoleId">
+                    <option value="">-- Select Role --</option>
+                    @foreach (var role in availableRoles)
+                    {
+                            <option value="@role.RowKey">@role.RoleName (@role.DefaultDurationMinutes min)</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <InputText class="form-control" @bind-Value="newRequest.Reason" placeholder="Why do you need this?" />
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+        </EditForm>
+    </div>
+</div>
+
+<h4>History</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Role</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Requested At</th>
+            <th>Expires At</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var req in myRequests)
+        {
+                <tr>
+                    <td>@req.RoleName</td>
+                    <td>@req.Reason</td>
+                    <td>
+                        <span class="badge @GetStatusBadge(req.PartitionKey)">@req.PartitionKey</span>
+                    </td>
+                    <td>@req.RequestedAt.ToString("g")</td>
+                    <td>@(req.ExpiresAt?.ToString("g") ?? "-")</td>
+                </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private AccessRequest newRequest = new AccessRequest();
+    private List<PimRoleConfiguration> availableRoles = new();
+    private List<AccessRequest> myRequests = new();
+    private string currentUserId = string.Empty;
+    private string currentUserDisplayName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // In real app, get OID. Mock uses NameIdentifier claim "user-123"
+        currentUserId = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+        currentUserDisplayName = user.Identity?.Name ?? "Unknown";
+
+        availableRoles = await GraphService.GetAvailableDirectoryRolesAsync();
+        // Just mocking the config lookup for now - in real app filter by Config enabled roles
+
+        await LoadMyRequests();
+    }
+
+    private async Task LoadMyRequests()
+    {
+        myRequests = await TableService.GetUserRequestsAsync(currentUserId);
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrEmpty(newRequest.RoleId)) return;
+
+        var selectedRole = availableRoles.FirstOrDefault(r => r.RowKey == newRequest.RoleId);
+        if (selectedRole == null) return;
+
+        newRequest.UserId = currentUserId;
+        newRequest.UserDisplayName = currentUserDisplayName;
+        newRequest.RoleName = selectedRole.RoleName;
+        newRequest.RequestedAt = DateTimeOffset.UtcNow;
+        newRequest.PartitionKey = RequestStatus.Pending;
+        // ExpiresAt not set yet - set on Approval
+
+        await TableService.SubmitRequestAsync(newRequest);
+
+        newRequest = new AccessRequest(); // Reset
+        await LoadMyRequests();
+    }
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        RequestStatus.Pending => "bg-warning text-dark",
+        RequestStatus.Active => "bg-success",
+        RequestStatus.Expired => "bg-secondary",
+        RequestStatus.Rejected => "bg-danger",
+        RequestStatus.Revoked => "bg-dark",
+        _ => "bg-primary"
+    };
+}
