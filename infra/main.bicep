@@ -12,6 +12,12 @@ param webAppName string = 'app-mypim-${uniqueString(subscription().id, resourceG
 @description('The name of the storage account')
 param storageAccountName string = 'stmypim${uniqueString(subscription().id, resourceGroupName)}'
 
+@description('The name of the log analytics workspace')
+param logAnalyticsWorkspaceName string = 'log-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+
+@description('The name of the application insights component')
+param applicationInsightsName string = 'appi-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
   location: location
@@ -26,6 +32,18 @@ module storage 'storage.bicep' = {
   }
 }
 
+
+
+module monitoring 'monitoring.bicep' = {
+  scope: rg
+  name: 'monitoringDeploy'
+  params: {
+    location: location
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
+    applicationInsightsName: applicationInsightsName
+  }
+}
+
 module webapp 'webapp.bicep' = {
   scope: rg
   name: 'webappDeploy'
@@ -33,6 +51,7 @@ module webapp 'webapp.bicep' = {
     location: location
     webAppName: webAppName
     storageConnectionString: storage.outputs.connectionString
+    applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
   }
 }
 

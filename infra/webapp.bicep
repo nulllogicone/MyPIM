@@ -8,6 +8,10 @@ param location string
 @secure()
 param storageConnectionString string
 
+@description('The connection string for Application Insights')
+@secure()
+param applicationInsightsConnectionString string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
   location: location
@@ -31,6 +35,10 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'ConnectionStrings__AzureTableStorage'
           value: storageConnectionString
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
         }
         {
           name: 'ASPNETCORE_ENVIRONMENT'
