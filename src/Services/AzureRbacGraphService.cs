@@ -38,6 +38,11 @@ public class AzureRbacGraphService : IGraphService
         var config = await _pimTableService.GetConfigurationAsync(roleId);
         if (config == null) throw new Exception($"Role Configuration for {roleId} not found");
 
+        if (!Guid.TryParse(userId, out var userObjectId))
+        {
+            throw new ArgumentException($"User ID '{userId}' is not a valid GUID (Object ID). Cannot assign Azure Role.");
+        }
+
         _logger.LogInformation($"Assigning Role {config.RoleName} ({roleId}) to User {userId} on scope {config.TargetScope}");
         
         var scopeId = new ResourceIdentifier(config.TargetScope);

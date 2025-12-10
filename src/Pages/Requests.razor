@@ -19,7 +19,7 @@
                     <option value="">-- Select Role --</option>
                     @foreach (var role in availableRoles)
                     {
-                            <option value="@role.RowKey">@role.RoleName (@role.DefaultDurationMinutes min)</option>
+                        <option value="@role.RowKey">@role.RoleName (@role.DefaultDurationMinutes min)</option>
                     }
                 </InputSelect>
             </div>
@@ -46,15 +46,15 @@
     <tbody>
         @foreach (var req in myRequests)
         {
-                <tr>
-                    <td>@req.RoleName</td>
-                    <td>@req.Reason</td>
-                    <td>
-                        <span class="badge @GetStatusBadge(req.PartitionKey)">@req.PartitionKey</span>
-                    </td>
-                    <td>@req.RequestedAt.ToString("g")</td>
-                    <td>@(req.ExpiresAt?.ToString("g") ?? "-")</td>
-                </tr>
+            <tr>
+                <td>@req.RoleName</td>
+                <td>@req.Reason</td>
+                <td>
+                    <span class="badge @GetStatusBadge(req.PartitionKey)">@req.PartitionKey</span>
+                </td>
+                <td>@req.RequestedAt.ToString("g")</td>
+                <td>@(req.ExpiresAt?.ToString("g") ?? "-")</td>
+            </tr>
         }
     </tbody>
 </table>
@@ -71,8 +71,13 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        // In real app, get OID. Mock uses NameIdentifier claim "user-123"
-        currentUserId = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+        // In real app, get OID (required for Azure RBAC).
+        // "http://schemas.microsoft.com/identity/claims/objectidentifier" is the standard claim for OID in .NET
+        currentUserId = user.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value
+        ?? user.FindFirst("oid")?.Value
+        ?? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        ?? "unknown";
+
         currentUserDisplayName = user.Identity?.Name ?? "Unknown";
 
         availableRoles = await GraphService.GetAvailableDirectoryRolesAsync();
