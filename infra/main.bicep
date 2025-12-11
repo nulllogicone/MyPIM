@@ -25,6 +25,15 @@ param eventGridViewerUrl string = ''
 @description('The Principal ID of the user to assign EventGrid Data Sender role to (optional)')
 param userPrincipalId string = ''
 
+@description('The Azure AD Tenant ID')
+param azureAdTenantId string
+
+@description('The Azure AD Domain')
+param azureAdDomain string
+
+@description('The Azure AD Client ID')
+param azureAdClientId string
+
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
   location: location
@@ -60,6 +69,9 @@ module webapp 'webapp.bicep' = {
     storageConnectionString: storage.outputs.connectionString
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     eventGridEndpoint: eventgrid.outputs.topicEndpoint
+    azureAdTenantId: azureAdTenantId
+    azureAdDomain: azureAdDomain
+    azureAdClientId: azureAdClientId
   }
 }
 

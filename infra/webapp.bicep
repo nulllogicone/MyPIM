@@ -15,6 +15,15 @@ param applicationInsightsConnectionString string
 @description('The endpoint of the Event Grid Topic')
 param eventGridEndpoint string
 
+@description('The Azure AD Tenant ID')
+param azureAdTenantId string
+
+@description('The Azure AD Domain')
+param azureAdDomain string
+
+@description('The Azure AD Client ID')
+param azureAdClientId string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
   location: location
@@ -61,6 +70,26 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'EventGrid__Endpoint'
           value: eventGridEndpoint
+        }
+        {
+          name: 'AzureAd__TenantId'
+          value: azureAdTenantId
+        }
+        {
+          name: 'AzureAd__Instance'
+          value: 'https://login.microsoftonline.com/'
+        }
+        {
+          name: 'AzureAd__Domain'
+          value: azureAdDomain
+        }
+        {
+          name: 'AzureAd__ClientId'
+          value: azureAdClientId
+        }
+        {
+          name: 'AzureAd__CallbackPath'
+          value: '/signin-oidc'
         }
       ]
     }
