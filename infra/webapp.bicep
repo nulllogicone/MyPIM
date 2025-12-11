@@ -24,6 +24,9 @@ param azureAdDomain string
 @description('The Azure AD Client ID')
 param azureAdClientId string
 
+@description('The Azure AD Instance')
+param azureAdInstance string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
   location: location
@@ -77,7 +80,7 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         }
         {
           name: 'AzureAd__Instance'
-          value: 'https://login.microsoftonline.com/'
+          value: azureAdInstance
         }
         {
           name: 'AzureAd__Domain'

@@ -38,4 +38,4 @@ jobs:
           scope: subscription
           region: ${{ env.AZURE_LOCATION }}
           template: infra/main.bicep
-          parameters: resourceGroupName=${{ env.AZURE_RESOURCE_GROUP_NAME }} location=${{ env.AZURE_LOCATION }} azureAdTenantId=${{ secrets.AZURE_AD_TENANT_ID }} azureAdClientId=${{ secrets.AZURE_AD_CLIENT_ID }} azureAdDomain=${{ vars.AZURE_AD_DOMAIN }}
+          parameters: resourceGroupName=${{ env.AZURE_RESOURCE_GROUP_NAME }} location=${{ env.AZURE_LOCATION }} azureAdTenantId=${{ vars.azureAdTenantId }} azureAdClientId=${{ vars.azureAdClientId }} azureAdDomain=${{ vars.azureAdDomain }} azureAdInstance=${{ vars.azureAdInstance }}

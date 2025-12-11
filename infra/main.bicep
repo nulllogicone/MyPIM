@@ -31,6 +31,9 @@ param azureAdTenantId string
 @description('The Azure AD Domain')
 param azureAdDomain string
 
+@description('The Azure AD Instance')
+param azureAdInstance string
+
 @description('The Azure AD Client ID')
 param azureAdClientId string
 
@@ -72,6 +75,7 @@ module webapp 'webapp.bicep' = {
     azureAdTenantId: azureAdTenantId
     azureAdDomain: azureAdDomain
     azureAdClientId: azureAdClientId
+    azureAdInstance: azureAdInstance
   }
 }
 
