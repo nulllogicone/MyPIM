@@ -10,6 +10,7 @@ public interface IEventService
 {
     Task PublishRequestCreatedAsync(AccessRequest request);
     Task PublishRequestRemovedAsync(AccessRequest request);
+    Task PublishAppStartedAsync();
 }
 
 public class EventGridService : IEventService
@@ -52,7 +53,7 @@ public class EventGridService : IEventService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to publish RequestCreated event");
+            _logger.LogError(ex, $"Failed to publish RequestCreated event: {ex.Message}");
         }
     }
 
@@ -74,7 +75,29 @@ public class EventGridService : IEventService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to publish RequestRemoved event");
+            _logger.LogError(ex, $"Failed to publish RequestRemoved event: {ex.Message}");
+        }
+    }
+
+    public async Task PublishAppStartedAsync()
+    {
+        if (_client == null) return;
+
+        var evt = new EventGridEvent(
+            subject: "app/lifecycle",
+            eventType: "MyPIM.App.Started",
+            dataVersion: "1.0",
+            data: new { Timestamp = DateTimeOffset.UtcNow, Message = "Application Started" }
+        );
+
+        try
+        {
+            await _client.SendEventAsync(evt);
+            _logger.LogInformation("Published AppStarted event");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to publish AppStarted event: {ex.Message}");
         }
     }
 }

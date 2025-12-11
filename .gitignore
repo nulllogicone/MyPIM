@@ -8,3 +8,9 @@ __tablestorage__
 bin/
 obj/
 
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates

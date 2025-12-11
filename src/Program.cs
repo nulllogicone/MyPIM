@@ -12,7 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor(options => 
+{
+    options.DetailedErrors = builder.Environment.IsDevelopment();
+});
 
 // MyPIM Services
 builder.Services.AddSingleton<PimTableService>();
@@ -44,6 +47,10 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseHttpsRedirection();
 
@@ -74,6 +81,10 @@ using (var scope = app.Services.CreateScope())
             IsEnabled = true
         });
     }
+    
+    // Publish App Started Event
+    var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
+    await eventService.PublishAppStartedAsync();
 }
 
 app.Run();

@@ -5,6 +5,7 @@ param location string
 param topicName string
 
 @description('The URL of the Event Grid Viewer (optional)')
+@secure()
 param viewerUrl string = ''
 
 resource topic 'Microsoft.EventGrid/topics@2022-06-15' = {

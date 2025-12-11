@@ -19,7 +19,11 @@ param logAnalyticsWorkspaceName string = 'log-mypim-${uniqueString(subscription(
 param applicationInsightsName string = 'appi-mypim-${uniqueString(subscription().id, resourceGroupName)}'
 
 @description('The URL of the Event Grid Viewer (optional)')
+@secure()
 param eventGridViewerUrl string = ''
+
+@description('The Principal ID of the user to assign EventGrid Data Sender role to (optional)')
+param userPrincipalId string = ''
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
@@ -89,5 +93,15 @@ module eventGridRoleAssignment 'roleAssignment.bicep' = {
     principalId: webapp.outputs.principalId
     roleDefinitionId: 'd5a91429-5739-47e2-a06b-3470a27159e7' // EventGrid Data Sender
     principalType: 'ServicePrincipal'
+  }
+}
+
+module userEventGridRoleAssignment 'roleAssignment.bicep' = if (!empty(userPrincipalId)) {
+  scope: rg
+  name: 'userEventGridRoleAssignment'
+  params: {
+    principalId: userPrincipalId
+    roleDefinitionId: 'd5a91429-5739-47e2-a06b-3470a27159e7' // EventGrid Data Sender
+    principalType: 'User'
   }
 }
