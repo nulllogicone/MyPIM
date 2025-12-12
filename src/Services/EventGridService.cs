@@ -1,8 +1,6 @@
 using Azure.Messaging.EventGrid;
 using Azure.Identity;
 using MyPIM.Data;
-using Microsoft.Extensions.Configuration;
-using System.Text.Json;
 
 namespace MyPIM.Services;
 
@@ -87,7 +85,10 @@ public class EventGridService : IEventService
             subject: "app/lifecycle",
             eventType: "MyPIM.App.Started",
             dataVersion: "1.0",
-            data: new { Timestamp = DateTimeOffset.UtcNow, Message = "Application Started" }
+            data: new { 
+                Timestamp = DateTimeOffset.UtcNow,
+                Environment.MachineName,
+                Message = "Application Started" }
         );
 
         try

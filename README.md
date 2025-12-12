@@ -2,7 +2,7 @@
 
 # MyPIM - Custom Azure Entra PIM Solution
 
-MyPIM is a mocked Proof of Concept (PoC) for a custom Privileged Identity Management system built with **ASP.NET Core Blazor Server**. It allows users to request temporary access to high-privilege roles, which are then approved by an admin and automatically revoked after a set duration.
+MyPIM is a Proof of Concept (PoC) for a custom Privileged Identity Management system built with **ASP.NET Core Blazor Server**. It allows users to request temporary access to high-privilege roles, which are then approved by an admin and automatically revoked after a set duration.
 
 ## Features
 
