@@ -37,6 +37,16 @@ param azureAdInstance string
 @description('The Azure AD Client ID')
 param azureAdClientId string
 
+@description('SQL admin login (Basic 5 DTU)')
+param sqlAdminLogin string
+
+@secure()
+@description('SQL admin password')
+param sqlAdminPassword string
+
+@description('Key Vault name')
+param keyVaultName string = 'kv-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
   location: location
@@ -63,6 +73,18 @@ module monitoring 'monitoring.bicep' = {
   }
 }
 
+module sql 'sql.bicep' = {
+  scope: rg
+  name: 'sqlDeploy'
+  params: {
+    location: location
+    sqlServerName: 'sql-mypim-${uniqueString(subscription().id, resourceGroupName)}'
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    databaseName: 'mypim'
+  }
+}
+
 module webapp 'webapp.bicep' = {
   scope: rg
   name: 'webappDeploy'
@@ -76,11 +98,27 @@ module webapp 'webapp.bicep' = {
     azureAdDomain: azureAdDomain
     azureAdClientId: azureAdClientId
     azureAdInstance: azureAdInstance
+    // Pass Key Vault settings to app
+    keyVaultUri: 'https://${keyVaultName}.vault.azure.net/'
+    sqlConnectionSecretName: 'SqlConnectionString'
+  }
+}
+
+module keyvault 'keyvault.bicep' = {
+  scope: rg
+  name: 'keyvaultDeploy'
+  params: {
+    location: location
+    vaultName: keyVaultName
+    webAppPrincipalId: webapp.outputs.principalId
+    secretName: 'SqlConnectionString'
+    secretValue: sql.outputs.sqlConnectionString
   }
 }
 
 output webAppUrl string = webapp.outputs.webAppUrl
 output webAppName string = webapp.outputs.webAppName
+output keyVaultUri string = 'https://${keyVaultName}.vault.azure.net/'
 
 module roleAssignment 'roleAssignment.bicep' = {
   scope: rg

@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.EntityFrameworkCore;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +21,7 @@ builder.Services.AddServerSideBlazor(options =>
 });
 
 // MyPIM Services
-builder.Services.AddSingleton<PimTableService>();
+builder.Services.AddScoped<PimDataService>();
 builder.Services.AddSingleton<IGraphService, AzureRbacGraphService>();
 builder.Services.AddSingleton<IEventService, EventGridService>();
 builder.Services.AddHostedService<RevocationWorker>();
@@ -49,6 +52,36 @@ builder.Services.AddAuthorization(options =>
         }));
 });
 
+// Database registration
+var sqlConn = builder.Configuration.GetConnectionString("Default");
+if (!string.IsNullOrWhiteSpace(sqlConn))
+{
+    builder.Services.AddDbContext<MyPimDbContext>(options => options.UseSqlServer(sqlConn));
+}
+else
+{
+    // Attempt to load from Key Vault in production
+    var vaultUri = builder.Configuration["KeyVault:VaultUri"] ?? builder.Configuration["KeyVault__VaultUri"];
+    var secretName = builder.Configuration["KeyVault:SqlConnectionSecretName"] ?? builder.Configuration["KeyVault__SqlConnectionSecretName"] ?? "SqlConnectionString";
+    if (!string.IsNullOrWhiteSpace(vaultUri))
+    {
+        var client = new SecretClient(new Uri(vaultUri), new DefaultAzureCredential());
+        try
+        {
+            var secret = client.GetSecret(secretName);
+            var kvConn = secret.Value.Value;
+            if (!string.IsNullOrWhiteSpace(kvConn))
+            {
+                builder.Services.AddDbContext<MyPimDbContext>(options => options.UseSqlServer(kvConn));
+            }
+        }
+        catch
+        {
+            // Swallow and continue without DB if KV is not accessible
+        }
+    }
+}
+
 
 var app = builder.Build();
 
@@ -77,23 +110,32 @@ app.MapFallbackToPage("/_Host");
 // Seed Configuration
 using (var scope = app.Services.CreateScope())
 {
-    var pimService = scope.ServiceProvider.GetRequiredService<PimTableService>();
-    var existingConfigs = await pimService.GetConfigurationsAsync();
-    
-    // Seed Reader Role if not present
-    var readerRoleId = "acdd72a7-3385-48ef-bd42-f606fba81ae7"; // Built-in Reader
-    if (!existingConfigs.Any(c => c.RowKey == readerRoleId))
+    // Optionally apply EF Core migrations at startup
+    var db = scope.ServiceProvider.GetService<MyPimDbContext>();
+    if (db != null)
     {
-        await pimService.SaveConfigurationAsync(new PimRoleConfiguration
+        await db.Database.MigrateAsync();
+
+        // Seed SQL configuration: Scope + Reader Role
+        var defaultArmScope = "/subscriptions/87f246bc-1398-416b-8263-c9b08d374e17/resourceGroups/rg-mypim-dev";
+        var scopeEntity = await db.Scopes.FirstOrDefaultAsync(s => s.ArmScope == defaultArmScope);
+        if (scopeEntity == null)
         {
-            RowKey = readerRoleId,
-            RoleName = "Reader",
-            DefaultDurationMinutes = 10,
-            TargetScope = "/subscriptions/87f246bc-1398-416b-8263-c9b08d374e17/resourceGroups/rg-mypim-dev",
-            IsEnabled = true
-        });
+            scopeEntity = new Scope { Id = Guid.NewGuid(), ArmScope = defaultArmScope };
+            db.Scopes.Add(scopeEntity);
+        }
+
+        var readerRoleIdGuid = Guid.Parse("acdd72a7-3385-48ef-bd42-f606fba81ae7");
+        var readerRole = await db.Roles.FirstOrDefaultAsync(r => r.Id == readerRoleIdGuid);
+        if (readerRole == null)
+        {
+            readerRole = new Role { Id = readerRoleIdGuid, Name = "Reader", ScopeId = scopeEntity.Id };
+            db.Roles.Add(readerRole);
+        }
+
+        await db.SaveChangesAsync();
     }
-    
+
     // Publish App Started Event
     var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
     await eventService.PublishAppStartedAsync();

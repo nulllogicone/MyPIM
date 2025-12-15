@@ -23,7 +23,7 @@ public class RevocationWorker : BackgroundService
             {
                 using (var scope = _serviceProvider.CreateScope())
                 {
-                    var tableService = scope.ServiceProvider.GetRequiredService<PimTableService>();
+                    var tableService = scope.ServiceProvider.GetRequiredService<PimDataService>();
                     var graphService = scope.ServiceProvider.GetRequiredService<IGraphService>();
                     var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
 

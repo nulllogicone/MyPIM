@@ -26,6 +26,10 @@ param azureAdClientId string
 
 @description('The Azure AD Instance')
 param azureAdInstance string
+@description('Key Vault URI')
+param keyVaultUri string = ''
+@description('SQL Connection Secret Name')
+param sqlConnectionSecretName string = ''
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
@@ -93,6 +97,15 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'AzureAd__CallbackPath'
           value: '/signin-oidc'
+        }
+        // Optional KV settings for app to resolve SQL connection
+        {
+          name: 'KeyVault__VaultUri'
+          value: !empty(keyVaultUri) ? keyVaultUri : ''
+        }
+        {
+          name: 'KeyVault__SqlConnectionSecretName'
+          value: !empty(sqlConnectionSecretName) ? sqlConnectionSecretName : ''
         }
       ]
     }

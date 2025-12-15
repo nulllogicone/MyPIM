@@ -11,14 +11,14 @@ namespace MyPIM.Services;
 public class AzureRbacGraphService : IGraphService
 {
     private readonly ILogger<AzureRbacGraphService> _logger;
-    private readonly PimTableService _pimTableService;
+    private readonly PimDataService _pimDataService;
     private readonly ArmClient _armClient;
     private readonly Microsoft.Graph.GraphServiceClient _graphClient;
 
-    public AzureRbacGraphService(ILogger<AzureRbacGraphService> logger, PimTableService pimTableService, IConfiguration configuration)
+    public AzureRbacGraphService(ILogger<AzureRbacGraphService> logger, PimDataService pimDataService, IConfiguration configuration)
     {
         _logger = logger;
-        _pimTableService = pimTableService;
+        _pimDataService = pimDataService;
 
         var options = new DefaultAzureCredentialOptions();
         
@@ -46,12 +46,12 @@ public class AzureRbacGraphService : IGraphService
     public async Task<List<PimRoleConfiguration>> GetAvailableDirectoryRolesAsync()
     {
         _logger.LogInformation("Fetching available roles from Table Storage");
-        return await _pimTableService.GetConfigurationsAsync();
+        return await _pimDataService.GetConfigurationsAsync();
     }
 
     public async Task AssignRoleAsync(string userId, string roleId)
     {
-        var config = await _pimTableService.GetConfigurationAsync(roleId);
+        var config = await _pimDataService.GetConfigurationAsync(roleId);
         if (config == null) throw new Exception($"Role Configuration for {roleId} not found");
 
         if (!Guid.TryParse(userId, out var userObjectId))
@@ -84,7 +84,7 @@ public class AzureRbacGraphService : IGraphService
 
     public async Task RevokeRoleAsync(string userId, string roleId)
     {
-        var config = await _pimTableService.GetConfigurationAsync(roleId);
+        var config = await _pimDataService.GetConfigurationAsync(roleId);
         if (config == null) throw new Exception($"Role Configuration for {roleId} not found");
 
         _logger.LogInformation($"Revoking Role {config.RoleName} ({roleId}) from User {userId} on scope {config.TargetScope}");
