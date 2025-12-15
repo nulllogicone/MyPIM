@@ -37,6 +37,9 @@ param azureAdInstance string
 @description('The Azure AD Client ID')
 param azureAdClientId string
 
+@description('The Admin Security Group ID')
+param adminSecurityGroupId string
+
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
   location: location
@@ -76,6 +79,7 @@ module webapp 'webapp.bicep' = {
     azureAdDomain: azureAdDomain
     azureAdClientId: azureAdClientId
     azureAdInstance: azureAdInstance
+    adminSecurityGroupId: adminSecurityGroupId
   }
 }
 

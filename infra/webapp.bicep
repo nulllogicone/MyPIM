@@ -27,6 +27,9 @@ param azureAdClientId string
 @description('The Azure AD Instance')
 param azureAdInstance string
 
+@description('The Admin Security Group ID')
+param adminSecurityGroupId string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: 'asp-${webAppName}'
   location: location
@@ -93,6 +96,10 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'AzureAd__CallbackPath'
           value: '/signin-oidc'
+        }
+        {
+          name: 'AdminSecurityGroupId'
+          value: adminSecurityGroupId
         }
       ]
     }
