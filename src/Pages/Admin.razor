@@ -4,6 +4,7 @@
 @using MyPIM.Services
 @inject PimTableService TableService
 @inject IGraphService GraphService
+@inject IEventService EventService
 
 <h3>Admin Dashboard</h3>
 
@@ -114,12 +115,14 @@ else
         req.ApprovedAt = DateTimeOffset.UtcNow; // Assume current user approved
 
         await TableService.UpdateRequestStatusAsync(req, RequestStatus.Active);
+        await EventService.PublishRequestApprovedAsync(req);
         await LoadData();
     }
 
     private async Task Deny(AccessRequest req)
     {
         await TableService.UpdateRequestStatusAsync(req, RequestStatus.Rejected);
+        await EventService.PublishRequestRejectedAsync(req);
         await LoadData();
     }
 }

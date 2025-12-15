@@ -8,6 +8,8 @@ public interface IEventService
 {
     Task PublishRequestCreatedAsync(AccessRequest request);
     Task PublishRequestRemovedAsync(AccessRequest request);
+    Task PublishRequestApprovedAsync(AccessRequest request);
+    Task PublishRequestRejectedAsync(AccessRequest request);
     Task PublishAppStartedAsync();
 }
 
@@ -74,6 +76,50 @@ public class EventGridService : IEventService
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Failed to publish RequestRemoved event: {ex.Message}");
+        }
+    }
+
+    public async Task PublishRequestApprovedAsync(AccessRequest request)
+    {
+        if (_client == null) return;
+
+        var evt = new EventGridEvent(
+            subject: $"requests/{request.RowKey}",
+            eventType: "MyPIM.Request.Approved",
+            dataVersion: "1.0",
+            data: request
+        );
+
+        try
+        {
+            await _client.SendEventAsync(evt);
+            _logger.LogInformation($"Published RequestApproved event for {request.RowKey}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to publish RequestApproved event: {ex.Message}");
+        }
+    }
+
+    public async Task PublishRequestRejectedAsync(AccessRequest request)
+    {
+        if (_client == null) return;
+
+        var evt = new EventGridEvent(
+            subject: $"requests/{request.RowKey}",
+            eventType: "MyPIM.Request.Rejected",
+            dataVersion: "1.0",
+            data: request
+        );
+
+        try
+        {
+            await _client.SendEventAsync(evt);
+            _logger.LogInformation($"Published RequestRejected event for {request.RowKey}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to publish RequestRejected event: {ex.Message}");
         }
     }
 
