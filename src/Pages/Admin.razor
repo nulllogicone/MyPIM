@@ -15,9 +15,18 @@
     <li class="nav-item">
         <a class="nav-link @(activeTab == "config" ? "active" : "")" @onclick='() => activeTab = "config"' style="cursor:pointer">Configuration</a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link @(activeTab == "history" ? "active" : "")" @onclick='() => activeTab = "history"' style="cursor:pointer">History</a>
-    </li>
+    <AuthorizeView Policy="AdminGroup">
+        <Authorized>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "history" ? "active" : "")" @onclick='() => activeTab = "history"' style="cursor:pointer">History</a>
+            </li>
+        </Authorized>
+        <NotAuthorized>
+            <li class="nav-item">
+                <a class="nav-link disabled" style="cursor:not-allowed" title="History requires MyPim security group membership">History</a>
+            </li>
+        </NotAuthorized>
+    </AuthorizeView>
 </ul>
 
 @if (activeTab == "approvals")
@@ -78,51 +87,58 @@ else if (activeTab == "config")
 }
 else if (activeTab == "history")
 {
-        <h4>Request History</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Role</th>
-                    <th>Reason</th>
-                    <th>Requested</th>
-                    <th>Status</th>
-                    <th>Processed</th>
-                    <th>Expires/Expired</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var req in historyRequests)
-            {
-                        <tr>
-                            <td>@req.UserDisplayName</td>
-                            <td>@req.RoleName</td>
-                            <td>@req.Reason</td>
-                            <td>@req.RequestedAt.ToString("g")</td>
-                            <td>
-                                @if (req.PartitionKey == RequestStatus.Active)
-                                {
-                                            <span class="badge bg-success">Active</span>
-                                }
-                                else if (req.PartitionKey == RequestStatus.Rejected)
-                                {
-                                            <span class="badge bg-danger">Rejected</span>
-                                }
-                                else if (req.PartitionKey == RequestStatus.Expired)
-                                {
-                                            <span class="badge bg-secondary">Expired</span>
-                                }
-                                else if (req.PartitionKey == RequestStatus.Revoked)
-                                {
-                                            <span class="badge bg-warning">Revoked</span>
-                                }
-                            </td>
-                            <td>@req.ApprovedAt?.ToString("g")</td>
-                            <td>@req.ExpiresAt?.ToString("g")</td>
-                        </tr>
-            }
-            </tbody>
-        </table>
+    <AuthorizeView Policy="AdminGroup">
+        <Authorized>
+            <h4>Request History</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Reason</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Processed</th>
+                        <th>Expires/Expired</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var req in historyRequests)
+                {
+                            <tr>
+                                <td>@req.UserDisplayName</td>
+                                <td>@req.RoleName</td>
+                                <td>@req.Reason</td>
+                                <td>@req.RequestedAt.ToString("g")</td>
+                                <td>
+                                    @if (req.PartitionKey == RequestStatus.Active)
+                                    {
+                                                <span class="badge bg-success">Active</span>
+                                    }
+                                    else if (req.PartitionKey == RequestStatus.Rejected)
+                                    {
+                                                <span class="badge bg-danger">Rejected</span>
+                                    }
+                                    else if (req.PartitionKey == RequestStatus.Expired)
+                                    {
+                                                <span class="badge bg-secondary">Expired</span>
+                                    }
+                                    else if (req.PartitionKey == RequestStatus.Revoked)
+                                    {
+                                                <span class="badge bg-warning">Revoked</span>
+                                    }
+                                </td>
+                                <td>@req.ApprovedAt?.ToString("g")</td>
+                                <td>@req.ExpiresAt?.ToString("g")</td>
+                            </tr>
+                }
+                </tbody>
+            </table>
+        </Authorized>
+        <NotAuthorized>
+            <div class="alert alert-warning">You do not have permission to view history. Membership in the MyPim security group is required.</div>
+        </NotAuthorized>
+    </AuthorizeView>
 }
 
 @code {
