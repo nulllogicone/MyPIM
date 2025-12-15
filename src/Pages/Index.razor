@@ -2,8 +2,50 @@
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Welcome to MyPIM</h1>
 
-Welcome to your new app.
+<div class="row" style="margin-top:1rem">
+	<div class="col-sm-6">
+		<div class="card">
+			<div class="card-body">
+				<h5 class="card-title">Open Requests</h5>
+				<p class="card-text" style="font-size:2rem;font-weight:600">@pendingCount</p>
+				<a class="btn btn-primary" href="requests">View Requests</a>
+			</div>
+		</div>
+	</div>
+	<div class="col-sm-6">
+		<div class="card">
+			<div class="card-body">
+				<h5 class="card-title">Configured Roles</h5>
+				<p class="card-text" style="font-size:2rem;font-weight:600">@roleCount</p>
+				<a class="btn btn-secondary" href="admin">Manage Roles</a>
+			</div>
+		</div>
+	</div>
+ </div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+	[Inject] MyPIM.Services.PimTableService PimService { get; set; } = default!;
+
+	int pendingCount;
+	int roleCount;
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			var pending = await PimService.GetRequestsByStatusAsync(MyPIM.Data.RequestStatus.Pending);
+			var roles = await PimService.GetConfigurationsAsync();
+
+			pendingCount = pending?.Count ?? 0;
+			roleCount = roles?.Count ?? 0;
+		}
+		catch
+		{
+			// Keep UI resilient: default to zeros if backend unavailable
+			pendingCount = 0;
+			roleCount = 0;
+		}
+	}
+}
