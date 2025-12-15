@@ -88,6 +88,8 @@ public class EventGridService : IEventService
             data: new { 
                 Timestamp = DateTimeOffset.UtcNow,
                 Environment.MachineName,
+                Environment.OSVersion,
+                Environment.UserName,
                 Message = "Application Started" }
         );
 
