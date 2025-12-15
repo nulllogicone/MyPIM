@@ -15,6 +15,9 @@
     <li class="nav-item">
         <a class="nav-link @(activeTab == "config" ? "active" : "")" @onclick='() => activeTab = "config"' style="cursor:pointer">Configuration</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == "history" ? "active" : "")" @onclick='() => activeTab = "history"' style="cursor:pointer">History</a>
+    </li>
 </ul>
 
 @if (activeTab == "approvals")
@@ -47,7 +50,7 @@
             </tbody>
         </table>
 }
-else
+else if (activeTab == "config")
 {
         <h4>Managed Roles</h4>
         <table class="table">
@@ -73,10 +76,59 @@ else
             Note: Configuration management is read-only in this mock demo.
         </div>
 }
+else if (activeTab == "history")
+{
+        <h4>Request History</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Reason</th>
+                    <th>Requested</th>
+                    <th>Status</th>
+                    <th>Processed</th>
+                    <th>Expires/Expired</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var req in historyRequests)
+            {
+                        <tr>
+                            <td>@req.UserDisplayName</td>
+                            <td>@req.RoleName</td>
+                            <td>@req.Reason</td>
+                            <td>@req.RequestedAt.ToString("g")</td>
+                            <td>
+                                @if (req.PartitionKey == RequestStatus.Active)
+                                {
+                                            <span class="badge bg-success">Active</span>
+                                }
+                                else if (req.PartitionKey == RequestStatus.Rejected)
+                                {
+                                            <span class="badge bg-danger">Rejected</span>
+                                }
+                                else if (req.PartitionKey == RequestStatus.Expired)
+                                {
+                                            <span class="badge bg-secondary">Expired</span>
+                                }
+                                else if (req.PartitionKey == RequestStatus.Revoked)
+                                {
+                                            <span class="badge bg-warning">Revoked</span>
+                                }
+                            </td>
+                            <td>@req.ApprovedAt?.ToString("g")</td>
+                            <td>@req.ExpiresAt?.ToString("g")</td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
 
 @code {
     private string activeTab = "approvals";
     private List<AccessRequest> pendingRequests = new();
+    private List<AccessRequest> historyRequests = new();
     private List<PimRoleConfiguration> configs = new();
 
     protected override async Task OnInitializedAsync()
@@ -87,6 +139,17 @@ else
     private async Task LoadData()
     {
         pendingRequests = await TableService.GetRequestsByStatusAsync(RequestStatus.Pending);
+        
+        // Load history: Active, Rejected, Expired, Revoked
+        var active = await TableService.GetRequestsByStatusAsync(RequestStatus.Active);
+        var rejected = await TableService.GetRequestsByStatusAsync(RequestStatus.Rejected);
+        var expired = await TableService.GetRequestsByStatusAsync(RequestStatus.Expired);
+        var revoked = await TableService.GetRequestsByStatusAsync(RequestStatus.Revoked);
+        
+        historyRequests = active.Concat(rejected).Concat(expired).Concat(revoked)
+            .OrderByDescending(r => r.ApprovedAt ?? r.RequestedAt)
+            .ToList();
+
         configs = await TableService.GetConfigurationsAsync();
 
         // Mock Configs if empty (first run)
