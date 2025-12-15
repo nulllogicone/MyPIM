@@ -3,7 +3,7 @@ name: Deploy App
 on:
   push:
     branches:
-      - main
+      - '**'
     paths:
       - 'src/**'
   workflow_dispatch:
