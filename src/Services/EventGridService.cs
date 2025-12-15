@@ -82,7 +82,7 @@ public class EventGridService : IEventService
         if (_client == null) return;
 
         var evt = new EventGridEvent(
-            subject: "app/lifecycle",
+            subject: $"app/lifecycle-{Environment.MachineName}",
             eventType: "MyPIM.App.Started",
             dataVersion: "1.0",
             data: new { 
