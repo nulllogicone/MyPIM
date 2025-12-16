@@ -50,3 +50,23 @@ The application is configured to use the local development storage by default in
     - `Pages/`: Blazor pages (`Requests.razor`, `Admin.razor`).
     - `Services/`: Logic for Table Storage and Mock Graph API.
     - `Workers/`: Background service for auto-revocation.
+
+## Admin Authorization
+
+The Admin dashboard is protected by an authorization policy that requires membership in a specific Azure AD (Entra ID) security group. Configure it as follows:
+
+- Set the group Object ID in configuration (use User Secrets for local dev):
+
+  ```bash
+  cd src
+  dotnet user-secrets set AdminSecurityGroupId "<security-group-object-id>"
+  ```
+
+- In Azure portal, enable group claims on the app registration used by this app (the `AzureAd:ClientId`):
+  - Azure Active Directory → App registrations → your app → Token configuration → Add groups claim
+  - Select "Security groups" and choose to emit group IDs
+  - Save
+
+
+Notes:
+- If a user is a member of many groups, Azure AD may omit group IDs and emit an overage indicator (`hasgroups`). In that case, enable a Graph fallback (OBF) to check group membership. Open an issue if you need this wired up.

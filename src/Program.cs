@@ -33,9 +33,21 @@ builder.Services.AddAuthorization(options =>
 {
     // By default, all incoming requests will be authorized according to the default policy
     options.FallbackPolicy = options.DefaultPolicy;
-});
+    // Policy: only members of configured security group can access admin features
+    options.AddPolicy("AdminGroup", policy =>
+        policy.RequireAssertion(ctx =>
+        {
+            var groupId = builder.Configuration["AdminSecurityGroupId"]; // Object ID of the Entra ID security group
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                return false;
+            }
 
-// builder.Services.AddScoped<AuthenticationStateProvider, MockAuthStateProvider>(); // Removed Mock
+            return ctx.User.HasClaim(c =>
+                (c.Type == "groups" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups")
+                && string.Equals(c.Value, groupId, StringComparison.OrdinalIgnoreCase));
+        }));
+});
 
 
 var app = builder.Build();

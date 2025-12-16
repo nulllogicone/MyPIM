@@ -92,7 +92,10 @@
 
     private async Task LoadMyRequests()
     {
-        myRequests = await TableService.GetUserRequestsAsync(currentUserId);
+        var requests = await TableService.GetUserRequestsAsync(currentUserId);
+        myRequests = requests
+            .OrderByDescending(r => r.RequestedAt)
+            .ToList();
     }
 
     private async Task HandleSubmit()
